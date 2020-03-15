@@ -1,0 +1,23 @@
+       - name: Create a systemd task for new sshd
+         copy:
+           src: /usr/lib/systemd/system/sshd.service
+           dest: /etc/systemd/system/sshd{{extra_ssh_port}}.service
+           remote_src: yes
+           force: no
+           owner: root
+
+       - name: Change configuration file for new sshd config
+         lineinfile:
+           path: "/etc/systemd/system/sshd{{extra_ssh_port}}.service"
+           regexp: '(ExecStart=/usr/sbin/sshd) -D \$OPTIONS'
+           line: '\1 -D $OPTIONS -f /etc/ssh/sshd_config_port{{extra_ssh_port}}'
+           backrefs: yes
+
+       - name: enable and start new sshd service
+         systemd:
+           enabled: yes
+           state: started
+           daemon_reload: yes
+           name: sshd{{extra_ssh_port}}.service
+
+       #- meta: end_play

@@ -1,0 +1,138 @@
+   - name: Install aker requirements
+     block:
+       - name: Install epel-release 
+         yum: 
+           name: ['epel-release']
+           state: installed
+         register: debug
+
+       - name: Install ansible requirements on CentOS
+         yum: 
+           name: ['rsync']
+           state: installed
+
+       - name: Install aker requirements on CentOS
+         yum: 
+           name: ['python2-paramiko','python-configparser','python-redis','python-urwid','python2-wcwidth','redis']
+           state: installed
+         register: debug
+
+       - name: Synchronization of src on the control machine to dest on the remote hosts
+         synchronize:
+           src: Aker/
+           dest: /usr/bin/aker
+
+       - name: Create aker log directory
+         file:
+           path: /var/log/aker
+           state: directory
+           mode: '0777'
+
+       - name: Create aker log file
+         copy:
+           content: ""
+           dest: /var/log/aker/aker.log
+           force: no
+           owner: root
+           mode: '0777'
+
+       - name: Backup sshd_config
+         copy:
+           src: /etc/ssh/sshd_config
+           dest: /etc/ssh/sshd_config.orig
+           remote_src: yes
+           force: no
+           owner: root
+
+       - name: Create and start extra ssh server
+         block:
+           - name: Create new sshd config using port {{extra_ssh_port}}
+             copy:
+               src: /etc/ssh/sshd_config.orig
+               dest: "/etc/ssh/sshd_config_port{{extra_ssh_port}}"
+               remote_src: yes
+               force: no
+               owner: root
+
+           - name: Change port 22 to {{extra_ssh_port}} in new sshd config
+             lineinfile:
+               path: "/etc/ssh/sshd_config_port{{extra_ssh_port}}"
+               regexp: '(Port )'
+               line: '\1 {{extra_ssh_port}}'
+               backrefs: yes
+    
+           - name: Allow only root to login
+             lineinfile:
+               path: "/etc/ssh/sshd_config_port{{extra_ssh_port}}"
+               regexp: 'AllowUsers'
+               line: 'AllowUsers root'
+    
+           - name: Permit root to login
+             lineinfile:
+               path: "/etc/ssh/sshd_config_port{{extra_ssh_port}}"
+               regexp: 'PermitRootLogin'
+               line: 'PermitRootLogin yes'
+    
+           - name: Create a systemd task for new sshd
+             copy:
+               src: /usr/lib/systemd/system/sshd.service
+               dest: /etc/systemd/system/sshd{{extra_ssh_port}}.service
+               remote_src: yes
+               force: no
+               owner: root
+    
+           - name: Change configuration file for new sshd config
+             lineinfile:
+               path: "/etc/systemd/system/sshd{{extra_ssh_port}}.service"
+               regexp: '(ExecStart=/usr/sbin/sshd) -D \$OPTIONS'
+               line: '\1 -D $OPTIONS -f /etc/ssh/sshd_config_port{{extra_ssh_port}}'
+               backrefs: yes
+    
+           - name: enable and start new sshd service
+             systemd:
+               enabled: yes
+               state: started
+               daemon_reload: yes
+               name: sshd{{extra_ssh_port}}.service
+    
+         when: (extra_ssh_port is defined) and (extra_ssh_port|int != 22)
+               
+       #- meta: end_play
+
+       - name: Insert/Update "Match User" configuration block in /etc/ssh/sshd_config
+         blockinfile:
+           path: /etc/ssh/sshd_config
+           block: |
+             Match Group *,!root
+             ForceCommand /usr/bin/aker/aker.py
+
+       - name: Enable and restart sshd
+         service:
+           name: sshd
+           enabled: yes
+           state: restarted
+         changed_when: false
+
+       - name: Enable and restart redis
+         service:
+           name: redis
+           enabled: yes
+           state: restarted
+         changed_when: false
+
+       - name: FLush all in redis
+         command: redis-cli FLUSHALL
+         changed_when: false
+
+       - name: Create aker config directory
+         file:
+           path: /etc/aker
+           state: directory
+           mode: '0755'
+
+       - name: Synchronization of config files
+         synchronize:
+           src: etc/
+           dest: /etc/aker
+
+     when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
