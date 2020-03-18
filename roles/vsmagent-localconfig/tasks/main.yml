@@ -1,0 +1,25 @@
+- name: Remove 40-tl-mount-localdrives
+  file:
+    path: /opt/thinlinc/etc/xstartup.d/40-tl-mount-localdrives
+    state: absent
+
+- name: Remove 41-tl-lp-redir-launch
+  file:
+    path: /opt/thinlinc/etc/xstartup.d/41-tl-lp-redir-launch
+    state: absent
+
+- name: Remove 43-tl-pulseaudio-launch.sh
+  file:
+    path: /opt/thinlinc/etc/xstartup.d/43-tl-pulseaudio-launch.sh
+    state: absent
+
+- name: Remove 50-tl-wait-smartcard
+  file:
+    path: /opt/thinlinc/etc/xstartup.d/50-tl-wait-smartcard
+    state: absent
+
+- name: Remove intro
+  lineinfile:
+    path: /opt/thinlinc/etc/conf.d/profiles.hconf
+    regexp: '^show_intro='
+    line: 'show_intro=false'

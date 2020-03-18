@@ -1,0 +1,16 @@
+- name: Enable epel
+  yum:
+    name: "{{ packages }}"
+  vars:
+    packages:
+    - epel-release
+
+- name: Install X Window System
+  yum:
+    name: "@X Window System"
+    state: present
+
+- name: Install Xfce
+  yum:
+    name: "@Xfce"
+    state: present
