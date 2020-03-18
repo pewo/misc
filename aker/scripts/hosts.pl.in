@@ -1,0 +1,4 @@
+hosts: apan=sol10 bepan=sol9 cepan=linux depan=linux
+hosts: eepan fepan
+users: peter=apan,bepan,cepan
+users: bjorn=apan,eepan
