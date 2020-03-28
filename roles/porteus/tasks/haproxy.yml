@@ -1,0 +1,36 @@
+- name: Install haproxy
+  yum: 
+    name: ['haproxy']
+    state: installed
+
+- name: Create haproxy errors directory
+  file:
+    path: /etc/haproxy/errors
+    state: directory
+    mode: '0755'
+
+- name: Enable and start haproxy
+  systemd:
+    enabled: yes
+    state: started
+    daemon_reload: yes
+    name: haproxy
+
+- name: Update error file
+  copy: 
+    src: nop.http
+    dest: /etc/haproxy/errors/nop.http
+    mode: 0644
+
+- name: Update haproxy config
+  copy: 
+    src: haproxy.cfg
+    dest: /etc/haproxy/haproxy.cfg
+    mode: 0644
+  register: conf
+
+- name: Restart haproxy on config change
+  systemd:
+    state: restarted
+    name: haproxy
+  when: conf.changed == true

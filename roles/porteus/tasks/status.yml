@@ -1,0 +1,15 @@
+- name: Create /local directory
+  file:
+    path: /local
+    state: directory
+
+- name: Synchronization of status
+  synchronize:
+    src: status/
+    dest: /local/status/
+
+- name: Install perl modules
+  yum: 
+    name: ['perl-JSON','perl-Data-Dumper']
+    state: installed
+

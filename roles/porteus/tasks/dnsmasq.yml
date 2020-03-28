@@ -1,0 +1,24 @@
+- name: Install dnsmasq
+  yum: 
+    name: ['dnsmasq']
+    state: installed
+
+- name: Enable and start dnsmasq
+  systemd:
+    enabled: yes
+    state: started
+    daemon_reload: yes
+    name: dnsmasq
+
+- name: Update dnsmasq config
+  copy: 
+    src: dnsmasq.conf
+    dest: /etc/dnsmasq.conf
+    mode: 0644
+  register: conf
+
+- name: Restart dnsmasq on config change
+  systemd:
+    state: restarted
+    name: dnsmasq
+  when: conf.changed == true

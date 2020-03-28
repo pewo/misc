@@ -1,0 +1,5 @@
+- include_tasks: "dnsmasq.yml"
+- include_tasks: "darkhttpd.yml"
+- include_tasks: "haproxy.yml"
+- include_tasks: "porteus.yml"
+- include_tasks: "status.yml"

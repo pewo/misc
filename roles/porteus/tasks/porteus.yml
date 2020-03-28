@@ -1,0 +1,4 @@
+- name: Synchronization of porteus
+  synchronize:
+    src: kiosk/
+    dest: /var/www/kiosk/
