@@ -1,0 +1,10 @@
+[
+{"id":"tc001","status":"ok"},
+{"id":"tc002","status":"nok"},
+{"id":"tc003","status":"assigned"},
+{"id":"tc004","status":"old_ok"},
+{"id":"tc005","status":"old_nok"},
+{"id":"tc006","status":"unknown"},
+{"id":"tc007","status":"skipped"},
+{"id":"tc008","status":"disabled"}
+]
