@@ -1,0 +1,14 @@
+connection=wired
+dhcp=yes
+browser=firefox
+autohide_navigation_bar=yes
+disable_firewall=yes
+homepage_append=mac
+homepage=http://haproxy.local/
+primary_keyboard_layout=se
+refresh_webpage=42
+root_password=porteus
+vnc_interactive=yes
+vnc_password=porteus
+additional_components=09-x11vnc.xzm uefi.zip 08-ssh.xzm initrdpxe.xz 
+
