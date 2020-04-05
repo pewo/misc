@@ -1,0 +1,10 @@
+[Unit]
+Description=Autopostinstallation
+After=network.target 
+
+[Service]
+RemainAfterExit=true
+ExecStart=-/usr/bin/wget -O /dev/null -o /dev/null --quiet  'http://127.0.0.1:8080/logger.pl&command=autoprodinstall'
+
+[Install]
+WantedBy=multi-user.target

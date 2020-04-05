@@ -2,100 +2,89 @@
 
 use strict;
 use File::Temp;
-use Fcntl qw(:flock SEEK_END);
+use CGI;
 
-my($template) = "webcmd";
-my($tempdir) = "/tmp/webcmd";
-my($extension) = "log";
-
-sub writer($) {
-	my($msg) = shift;
-
-	my $log = File::Temp->new(
-		TEMPLATE => $template . ".XXXXX",
-		DIR => $tempdir,
-		SUFFIX => ".$extension",
-		UNLINK => 0,
-	);
-	
-	chomp($msg);
-	print $log $msg . "\n";
-	close($log);
-	my $mode = 0666;
-	chmod($mode, $log->filename);
-	return(0);
+sub fixbool($) {
+	my($var) = shift;
+	if ( defined($var) ) {
+		if ( $var ) {
+			$var = 1;
+		}
+		else {
+			$var = 0;
+		}
+	}
+	return($var);
 }
 
 sub cgi() {
-	print "Content-type: text/html\n\n";
-	print "<PRE>\n";
-	my($rec) = 0;
-	foreach ( <$tempdir/$template.*.$extension> ) {
-		$rec++;
-		my $mtime = (stat($_))[9] || "unknown";
-		print "REC=$rec FILE=$_ MTIME=$mtime ";
-		unless ( open(IN,"<$_") ) {
-			print "ERROR=$!\n";
-			next;
-		}
+	my($q) = CGI->new;
+	print $q->header();
 
-		my($line);
-		$line = <IN>;
-		chomp($line);
-		print "DATA=$line\n";
-		close(IN);
-		unlink($_);
+	my($template) = "webcmd";
+	my($tempdir) = "/tmp/webcmd";
+	my($extension) = "log";
+
+	mkdir($tempdir) unless ( -d $tempdir );
+	my $mode = 0777;
+	chmod($mode, $tempdir);
+
+	my $command  = $q->param("command");
+	exit(0) unless ( defined($command) );
+	exit(0) unless ( $command =~ /^\w+$/ );
+
+	my $keep = fixbool($q->param("keep"));
+	my $ignoredone  = fixbool($q->param("ignoredone"));
+
+	print "<PRE>\n";
+	if ( $command eq "list" ) {
+		my($rec) = 0;
+		foreach ( <$tempdir/$template.*.$extension> ) {
+			$rec++;
+			print "REC=$rec FILE=$_ ";
+			unless ( open(IN,"<$_") ) {
+				print "ERROR=$!\n";
+				next;
+			}
+
+			my($line);
+			$line = <IN>;
+			chomp($line);
+			print "DATA=$line\n";
+			close(IN);
+			unless ( $keep ) {
+				unlink($_);
+			}
+		}
+	}
+	else {
+		#my($client) = $ENV{REMOTE_ADDR};
+		my($client) = $q->remote_addr();
+		exit(0) unless ( defined($client) );
+		exit(0) unless ( $client =~ /^\d+\.\d+\.\d+\.\d+$/ );
+		my($host) = $q->remote_host();
+		my($msg) = "command=$command;ignoredone=$ignoredone;client=$client;host=$host;time=" . time;
+
+		my $log = File::Temp->new(
+			TEMPLATE => $template . ".XXXXX",
+			DIR => $tempdir,
+			SUFFIX => ".$extension",
+			UNLINK => 0,
+		);
+	
+		chomp($msg);
+		print $log $msg . "\n";
+		close($log);
+		my $mode = 0666;
+		chmod($mode, $log->filename);
+		return(0);
 	}
 	print "</PRE>\n";
 }
 
-sub parser($) {
-	my($error_log) = shift;
-	#
-	# Wait here until there is an error file
-	#
-	while ( ! -r $error_log ) {
-		sleep(10);
-	}
-
-	#
-	# Open a tail to read from log
-	#
-	unless ( open(POPEN,"/usr/bin/tail -f $error_log|") ) {
-		die "could not start tail on $error_log: $!";
-	}
-	while ( <POPEN> ) {
-		#2020/04/04 17:45:59 [error] 19#19: *1 access forbidden by rule, client: 31.209.59.5, server: , request: "GET /webcmd/autopostinstall HTTP/1.1", host: "smurf.xname.se:8080"
-		print "GOT: $_";
-		writer($_);
-	}
-	close(POPEN);
-	return(0);
-}
-
-mkdir($tempdir) unless ( -d $tempdir );
-my $mode = 0777;
-chmod($mode, $tempdir);
 
 my($GATEWAY_INTERFACE) = $ENV{GATEWAY_INTERFACE};
 if ( defined($GATEWAY_INTERFACE) && $GATEWAY_INTERFACE =~ /CGI/ ) {
-	cgi();
-	exit(0);
+	exit(cgi());
 }
-else {
-	my $pid = fork;
-
-	if (!defined $pid) {
-    		die "Cannot fork: $!";
-	}
-	elsif ($pid == 0) {
-    		# client process
-		my($error_log) = "/tmp/webcmd.log";
-		parser($error_log);
-    		exit 0;
-	}
-	else {
-		exit(0);
-	}
-}
-
+exit(0);
