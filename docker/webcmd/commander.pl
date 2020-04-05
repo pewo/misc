@@ -81,6 +81,11 @@ foreach $line ( split(/\n|\r/,$content ) ) {
 	next unless ( $command =~ /^\w+$/ );
 	print "command:$command\n" if ( $debug );
 
+	my($time) = $args{time};
+	next unless ( defined($time) );
+	next unless ( $time =~ /^\d+$/ );
+	print "time:$time\n" if ( $debug );
+
 	unless ( -d $jobdir ) {
 		make_path($jobdir, { verbose => 1, mode => 0755, });
 	}
@@ -100,9 +105,11 @@ foreach $line ( split(/\n|\r/,$content ) ) {
 	unlink($jobfile);
 	delete($args{client});
 	delete($args{command});
+	delete($args{time});
 	if ( open(my $fh,">>",$jobfile) ) {
 		print $fh "client=$client\n";
 		print $fh "command=$command\n";
+		print $fh "time=$time\n";
 		print $fh "now=" . time . "\n";
 		foreach ( sort keys %args ) {
 			print $fh "arg_$_=$args{$_}\n";

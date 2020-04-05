@@ -36,7 +36,6 @@ sub cgi() {
 	my $keep = fixbool($q->param("keep"));
 	my $ignoredone  = fixbool($q->param("ignoredone"));
 
-	print "<PRE>\n";
 	if ( $command eq "list" ) {
 		my($rec) = 0;
 		foreach ( <$tempdir/$template.*.$extension> ) {
@@ -58,12 +57,11 @@ sub cgi() {
 		}
 	}
 	else {
-		#my($client) = $ENV{REMOTE_ADDR};
 		my($client) = $q->remote_addr();
 		exit(0) unless ( defined($client) );
 		exit(0) unless ( $client =~ /^\d+\.\d+\.\d+\.\d+$/ );
-		my($host) = $q->remote_host();
-		my($msg) = "command=$command;ignoredone=$ignoredone;client=$client;host=$host;time=" . time;
+		my($msg) = "command=$command;client=$client;time=" . time;
+		$msg .= ";ignoredone=$ignoredone" if ( defined($ignoredone) );
 
 		my $log = File::Temp->new(
 			TEMPLATE => $template . ".XXXXX",
@@ -79,7 +77,6 @@ sub cgi() {
 		chmod($mode, $log->filename);
 		return(0);
 	}
-	print "</PRE>\n";
 }
 
 
