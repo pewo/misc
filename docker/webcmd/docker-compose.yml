@@ -1,0 +1,9 @@
+version: '3'
+services:
+    web:
+        container_name: webcmd
+        build:
+            context: .
+            
+        ports:
+            - "8080:80"
